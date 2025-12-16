@@ -1,0 +1,5 @@
+Create a connection in Airflow UI
+must be Amazon Web Services type of connection
+minio minio123
+http://nginx:9000
+need to download amazon providers and spark providers aswell

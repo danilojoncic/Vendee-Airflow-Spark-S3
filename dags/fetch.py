@@ -1,7 +1,9 @@
 from airflow.sdk import DAG, task
 from datetime import datetime
+from airflow.datasets import Dataset
 
-# ---------------- CONFIG ----------------
+staging_events = Dataset("s3://staging")
+
 START_DATE = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
 CONN_ID = "s3_load_balanced"
 BUCKETS = ["staging", "jars", "scripts", "misc", "bronze", "silver", "gold"]
@@ -40,36 +42,46 @@ with (DAG(
             if bucket not in existing_buckets:
                 hook.create_bucket(bucket)
                 print(f"Created bucket: {bucket}")
-        return BUCKET_FOR_URLS  # return bucket to use for URLs
+        return BUCKET_FOR_URLS
 
     @task
-    def setup_urls(bucket_name: str):
+    def setup_urls():
         from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
         hook = S3Hook(aws_conn_id=CONN_ID)
-        if not hook.check_for_key(URL_KEY, bucket_name):
+        if not hook.check_for_key(URL_KEY, "misc"):
             urls = [MAIN_URL_TEMPLATE.format(ts) for ts in generate_timestamps(START_TS, END_TS)]
-            hook.load_string("\n".join(urls), URL_KEY, bucket_name=bucket_name, replace=True)
-            print(f"Initialized URL list in {bucket_name}/{URL_KEY}")
-        return bucket_name
+            hook.load_string("\n".join(urls), URL_KEY, bucket_name="misc", replace=True)
+            print(f"Initialized URL list in {"misc"}/{URL_KEY}")
+
 
     @task
-    def get_next_url(bucket_name: str):
+    def get_next_url():
         from airflow.exceptions import AirflowSkipException
         from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
         hook = S3Hook(aws_conn_id=CONN_ID)
-        if not hook.check_for_key(URL_KEY, bucket_name):
-            raise AirflowSkipException("No URLs left to process.")
 
-        content = hook.read_key(URL_KEY, bucket_name=bucket_name)
-        urls = content.splitlines()
+        if not hook.check_for_key(URL_KEY, "misc"):
+            raise AirflowSkipException("No URLs file found.")
+
+        content = hook.read_key(URL_KEY, bucket_name="misc")
+        urls = [u for u in content.splitlines() if u.strip()]
+
         if not urls:
-            raise AirflowSkipException("URL list empty, nothing to download.")
+            raise AirflowSkipException("URL list empty.")
 
         next_url = urls.pop(0)
-        hook.load_string("\n".join(urls), URL_KEY, bucket_name=bucket_name, replace=True)
+
+        hook.load_string(
+            "\n".join(urls),
+            key=URL_KEY,
+            bucket_name="misc",
+            replace=True,
+        )
+
         return next_url
+
 
     @task
     def ping_website():
@@ -80,26 +92,25 @@ with (DAG(
             raise Exception(f"Website not reachable")
         return True
 
-    @task
-    def download_file(url: str, bucket_name: str):
+    @task(outlets=[staging_events])
+    def download_file(url: str):
         from airflow.providers.amazon.aws.hooks.s3 import S3Hook
         import requests
 
         hook = S3Hook(aws_conn_id=CONN_ID)
         key = url.split("/")[-1]
 
-        if hook.check_for_key(key, bucket_name):
+        if hook.check_for_key(key, "staging"):
             return f"Skipped {key}, already exists"
 
         r = requests.get(url)
         if r.status_code == 200:
-            hook.load_bytes(r.content, key, bucket_name=bucket_name, replace=False)
+            hook.load_bytes(r.content, key, bucket_name="staging", replace=False)
             return f"Uploaded {key}"
         else:
             raise Exception(f"Failed to download {url}")
 
-    # ---------------- TASK FLOW ----------------
-    bucket_name = ensure_buckets_exist()
-    setup_urls(bucket_name)
-    next_url = get_next_url(bucket_name)
-    ping_website() >> download_file(next_url, bucket_name)
+    ensure_buckets_exist()
+    setup_urls()
+    next_url = get_next_url()
+    ping_website() >> download_file(next_url)

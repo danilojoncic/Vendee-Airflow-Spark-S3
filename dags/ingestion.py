@@ -24,7 +24,7 @@ def generate_timestamps(start_date: str, end_date: str, step_hours: int = STEP_H
         current += timedelta(hours=step_hours)
 
 with (DAG(
-    dag_id="website_downloader_s3_fifo",
+    dag_id="downloader",
     start_date=START_DATE,
     schedule="*/2 * * * *",
     catchup=False,

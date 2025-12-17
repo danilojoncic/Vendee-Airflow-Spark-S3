@@ -3,3 +3,5 @@ must be Amazon Web Services type of connection
 minio minio123
 http://nginx:9000
 need to download amazon providers and spark providers aswell
+do not use latest versions because pandas 3.x.x does not register calamine by default
+and does not see it as an available engine for current working version check the Dockerfile-airflow file

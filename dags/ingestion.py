@@ -26,7 +26,7 @@ def generate_timestamps(start_date: str, end_date: str, step_hours: int = STEP_H
 with (DAG(
     dag_id="downloader",
     start_date=START_DATE,
-    schedule="*/2 * * * *",
+    schedule="*/5 * * * *",
     catchup=False,
     tags=["s3", "downloader"]
 ) as dag):

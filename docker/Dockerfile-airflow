@@ -2,3 +2,5 @@ FROM apache/airflow:3.1.5
 
 RUN pip install --no-cache-dir apache-airflow-providers-amazon==9.18.1
 RUN pip install --no-cache-dir apache-airflow-providers-apache-spark==5.4.1 --no-deps
+RUN pip install --no-cache-dir pandas==2.3.3
+RUN pip install --no-cache-dir python-calamine==0.5.3

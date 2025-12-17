@@ -1,0 +1,19 @@
+FROM apache/spark:3.5.3
+
+ENV SPARK_HOME=/opt/spark
+ENV PATH=$PATH:$SPARK_HOME/bin
+
+RUN mkdir -p $SPARK_HOME/jars
+
+RUN curl -L -o $SPARK_HOME/jars/aws-java-sdk-bundle-1.12.513.jar \
+    https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.513/aws-java-sdk-bundle-1.12.513.jar \
+ && curl -L -o $SPARK_HOME/jars/hadoop-aws-3.3.6.jar \
+    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.6/hadoop-aws-3.3.6.jar \
+ && curl -L -o $SPARK_HOME/jars/commons-logging-1.2.jar \
+    https://repo1.maven.org/maven2/commons-logging/commons-logging/1.2/commons-logging-1.2.jar \
+ && curl -L -o $SPARK_HOME/jars/commons-lang3-3.12.0.jar \
+    https://repo1.maven.org/maven2/org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar
+
+EXPOSE 8080 7077 4040
+
+CMD ["sh", "-c", "/opt/spark/bin/spark-class org.apache.spark.deploy.master.Master -h spark-master && tail -f /dev/null"]

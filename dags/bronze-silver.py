@@ -72,6 +72,15 @@ with DAG(
         application_args=["--waterline", "{{ ti.xcom_pull(task_ids='read_waterline') }}"],
         conn_id=SPARK_CONN_ID,
         do_xcom_push=True,
+        conf={
+            # S3 credentials - these must be set as spark.hadoop properties
+            'spark.hadoop.fs.s3a.access.key': "minio",
+            'spark.hadoop.fs.s3a.secret.key': "minio123",
+            'spark.hadoop.fs.s3a.endpoint': 'http://nginx:9000',
+            'spark.hadoop.fs.s3a.path.style.access': 'true',
+            'spark.hadoop.fs.s3a.impl': 'org.apache.hadoop.fs.s3a.S3AFileSystem',
+            'spark.hadoop.fs.s3a.aws.credentials.provider': 'org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider',
+        },
     )
     update_wl = write_waterline("{{ ti.xcom_pull(task_ids='bronze_to_silver') }}")
 

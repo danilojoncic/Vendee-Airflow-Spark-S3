@@ -4,3 +4,28 @@ RUN pip install --no-cache-dir apache-airflow-providers-amazon==9.18.1
 RUN pip install --no-cache-dir apache-airflow-providers-apache-spark==5.4.1 --no-deps
 RUN pip install --no-cache-dir pandas==2.3.3
 RUN pip install --no-cache-dir python-calamine==0.5.3
+
+USER root
+
+# Install Spark
+RUN apt-get update && \
+    apt-get install -y wget default-jdk && \
+    wget https://archive.apache.org/dist/spark/spark-3.5.3/spark-3.5.3-bin-hadoop3.tgz && \
+    tar -xzf spark-3.5.3-bin-hadoop3.tgz && \
+    mv spark-3.5.3-bin-hadoop3 /opt/spark && \
+    rm spark-3.5.3-bin-hadoop3.tgz
+
+# Download S3 libraries for Spark
+RUN cd /opt/spark/jars && \
+    wget https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar && \
+    wget https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.262/aws-java-sdk-bundle-1.12.262.jar
+
+# Set environment variables
+ENV SPARK_HOME=/opt/spark
+ENV PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
+
+# Ensure proper permissions
+RUN chmod +x /opt/spark/bin/* && \
+    chmod +x /opt/spark/sbin/*
+
+USER airflow

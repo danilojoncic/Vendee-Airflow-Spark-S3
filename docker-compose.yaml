@@ -334,6 +334,7 @@ services:
       context: .
       dockerfile: ./docker/Dockerfile-spark
     container_name: spark-master
+    command: bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.master.Master & tail -f /dev/null"
     hostname: spark-master
     ports:
       - "8082:8080"
@@ -350,6 +351,47 @@ services:
     restart: no
 
 
+  spark-worker-1:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile-spark
+    container_name: spark-worker-1
+    command: bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 & tail -f /dev/null"
+    hostname: spark-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2g
+    ports:
+      - "8081:8081"
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    networks:
+      - minio-cluster
+    restart: unless-stopped
+
+  spark-worker-2:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile-spark
+    container_name: spark-worker-2
+    command: bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 & tail -f /dev/null"
+    hostname: spark-worker-2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2g
+    ports:
+      - "8083:8081"
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    networks:
+      - minio-cluster
+    restart: unless-stopped
 
 networks:
   minio-cluster:

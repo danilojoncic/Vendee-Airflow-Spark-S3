@@ -6,3 +6,10 @@ need to download amazon providers and spark providers aswell
 do not use latest versions because pandas 3.x.x does not register calamine by default
 and does not see it as an available engine for current working version check the Dockerfile-airflow file
 create spark connection in airflow ui
+
+
+when uploading the jar you need to do the following
+first connect to the minio s3 using mc
+mc alias set minio http://localhost:9000 minio minio123
+and then use mc cp command
+mc cp /Users/danny/Desktop/bronze_to_silver.jar minio/jars/bronze_to_silver.jar

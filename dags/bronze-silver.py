@@ -44,26 +44,6 @@ with DAG(
             return "00000000_000000"
 
 
-    @task(trigger_rule="all_success")
-    def write_waterline(spark_logs: str):
-        from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-        hook = S3Hook(aws_conn_id=AWS_CONN_ID)
-        bucket = "misc"
-        key = "waterline.txt"
-
-        new_wl = None
-        for line in spark_logs.splitlines():
-            if line.startswith("NEW_WATERLINE="):
-                new_wl = line.split("=", 1)[1].strip()
-                break
-
-        if new_wl:
-            hook.load_string(new_wl, key=key, bucket_name=bucket, replace=True)
-            return new_wl
-        else:
-            raise ValueError("No NEW_WATERLINE found in Spark logs")
-
-
     check = ensure_waterline()
     waterline = read_waterline()
     spark_task = SparkSubmitOperator(
@@ -71,7 +51,6 @@ with DAG(
         application="s3a://jars/bronze_to_silver.jar",
         application_args=["--waterline", "{{ ti.xcom_pull(task_ids='read_waterline') }}"],
         conn_id=SPARK_CONN_ID,
-        do_xcom_push=True,
         conf={
             # S3 credentials - these must be set as spark.hadoop properties
             'spark.hadoop.fs.s3a.access.key': "minio",
@@ -82,8 +61,7 @@ with DAG(
             'spark.hadoop.fs.s3a.aws.credentials.provider': 'org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider',
         },
     )
-    update_wl = write_waterline("{{ ti.xcom_pull(task_ids='bronze_to_silver') }}")
 
-    check >> waterline >> spark_task >> update_wl
+    check >> waterline >> spark_task
 
 

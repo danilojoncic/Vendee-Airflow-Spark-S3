@@ -2,6 +2,13 @@ The finale of the Vendee saga, now includes Airflow and some Data Engineering pa
 https://github.com/danilojoncic/Vendee-Globe-Spark-S3 for S3 cluster and Spark master with 2 workers
 https://github.com/danilojoncic/Vendee-Globe-Data-Analysis for pure python/pandas implementation with just docker compose for infrastructure and orchestration (far fetched), this repo's README has the most comprehensive explanation of the project and the desired outcome
 
+Setup Overview
+
+
+
+DAGs and Buckets Overview
+<img width="922" height="521" alt="Untitled Diagram drawio-2" src="https://github.com/user-attachments/assets/b1ad6f1e-afad-4657-aa3a-24515fc0220a" />
+
 
 SCREENSHOTS
 <img width="635" height="305" alt="Screenshot 2025-12-18 at 10 54 01" src="https://github.com/user-attachments/assets/95d808e1-7f22-47b5-9dcd-12cf633d9124" />
